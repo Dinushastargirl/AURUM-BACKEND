@@ -11,7 +11,12 @@ import {
   Info, 
   Layers,
   Sparkles,
-  MessageSquare
+  MessageSquare,
+  Lock,
+  Cloud,
+  ExternalLink,
+  Database,
+  Globe
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { AURUM_PROJECT_FILES, SPRING_DEPENDENCIES } from './constants';
@@ -77,6 +82,8 @@ const App: React.FC = () => {
                 { id: TabType.ARCHITECTURE, icon: Layers, label: 'Architecture' },
                 { id: TabType.CODE, icon: Code2, label: 'Code Explorer' },
                 { id: TabType.SIMULATOR, icon: Zap, label: 'Logic Simulator' },
+                { id: TabType.AUTH, icon: Lock, label: 'Auth Logic' },
+                { id: TabType.DEPLOYMENT, icon: Cloud, label: 'Deployment' },
                 { id: TabType.AI_EXPLAINER, icon: Sparkles, label: 'AI Code Insights' }
               ].map(item => (
                 <button
@@ -139,6 +146,8 @@ const App: React.FC = () => {
                 {activeTab === TabType.ARCHITECTURE && "System Architecture"}
                 {activeTab === TabType.CODE && `Explorer / ${selectedFile.name}`}
                 {activeTab === TabType.SIMULATOR && "Validation Simulator"}
+                {activeTab === TabType.AUTH && "Authentication Logic"}
+                {activeTab === TabType.DEPLOYMENT && "Deployment Roadmap"}
                 {activeTab === TabType.AI_EXPLAINER && "AI Architectural Review"}
              </h2>
           </div>
@@ -198,7 +207,6 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Data Flow Diagram (CSS based) */}
               <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl">
                 <h4 className="text-center font-bold mb-8 text-slate-400 uppercase tracking-widest text-sm">Application Request Pipeline</h4>
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-3xl mx-auto">
@@ -244,6 +252,121 @@ const App: React.FC = () => {
             </div>
           )}
 
+          {activeTab === TabType.AUTH && (
+            <div className="space-y-8 animate-in fade-in duration-500">
+              <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl">
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+                  <Lock className="text-amber-500" size={24} />
+                  Authentication Strategy
+                </h3>
+                <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                  For this project, we implement a straightforward credentials check in <code className="text-amber-200">AuthController.java</code>. 
+                  The backend validates the request and returns a <strong>Role</strong> and <strong>Redirect URL</strong> which the frontend uses to route the user.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                  <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <p className="text-xs font-bold text-slate-500 uppercase mb-2 tracking-widest">Admin Access</p>
+                    <p className="text-sm text-slate-300">User: <code className="text-amber-400">admin</code></p>
+                    <p className="text-sm text-slate-300">Pass: <code className="text-amber-400">1234</code></p>
+                    <p className="text-[10px] text-emerald-500 mt-2">Redirects to /admin</p>
+                  </div>
+                  <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <p className="text-xs font-bold text-slate-500 uppercase mb-2 tracking-widest">Client Access</p>
+                    <p className="text-sm text-slate-300">User: <code className="text-amber-400">client</code></p>
+                    <p className="text-sm text-slate-300">Pass: <code className="text-amber-400">1234</code></p>
+                    <p className="text-[10px] text-emerald-500 mt-2">Redirects to /booking</p>
+                  </div>
+                </div>
+
+                <div className="bg-indigo-600/10 border border-indigo-600/30 p-6 rounded-2xl">
+                  <h4 className="text-indigo-400 font-bold mb-2 flex items-center gap-2">
+                    <Terminal size={18} />
+                    Frontend Logic (Next.js Example)
+                  </h4>
+                  <pre className="text-xs text-indigo-200 font-mono leading-relaxed">
+{`const handleLogin = async (creds) => {
+  const res = await fetch('/api/login', { method: 'POST', ... });
+  const data = await res.json();
+  if (res.ok) {
+    router.push(data.redirectUrl); // e.g., '/admin' or '/booking'
+  }
+}`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === TabType.DEPLOYMENT && (
+            <div className="space-y-8 animate-in fade-in duration-500">
+              <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
+                  <Cloud className="text-amber-500" size={24} />
+                  Cloud Deployment Strategy
+                </h3>
+                
+                <div className="overflow-hidden border border-slate-800 rounded-xl">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-800/50 text-slate-400 text-[10px] uppercase font-bold tracking-widest border-b border-slate-700">
+                      <tr>
+                        <th className="px-6 py-4">Component</th>
+                        <th className="px-6 py-4">Repository</th>
+                        <th className="px-6 py-4">Cloud Host</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-slate-300">
+                      <tr className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-medium flex items-center gap-2">
+                          <Globe size={14} className="text-amber-500" /> Frontend UI
+                        </td>
+                        <td className="px-6 py-4 font-mono text-xs text-slate-500 underline">aurum-bookings</td>
+                        <td className="px-6 py-4">
+                          <span className="bg-black border border-slate-700 px-2 py-1 rounded text-xs flex items-center gap-1.5 w-fit">
+                            Vercel <ExternalLink size={10} />
+                          </span>
+                        </td>
+                      </tr>
+                      <tr className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-medium flex items-center gap-2">
+                          <Database size={14} className="text-amber-500" /> Java API
+                        </td>
+                        <td className="px-6 py-4 font-mono text-xs text-slate-500 underline">AURUM-BACKEND</td>
+                        <td className="px-6 py-4">
+                          <span className="bg-indigo-950 border border-indigo-800 px-2 py-1 rounded text-xs flex items-center gap-1.5 w-fit">
+                            Railway.app <ExternalLink size={10} />
+                          </span>
+                        </td>
+                      </tr>
+                      <tr className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-medium flex items-center gap-2">
+                          <Terminal size={14} className="text-amber-500" /> Database
+                        </td>
+                        <td className="px-6 py-4 font-mono text-xs text-slate-500">Managed Instance</td>
+                        <td className="px-6 py-4">
+                          <span className="bg-slate-900 border border-slate-700 px-2 py-1 rounded text-xs flex items-center gap-1.5 w-fit">
+                            Supabase / Vercel Postgres
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                    <h5 className="text-xs font-bold text-amber-500 uppercase mb-2">Frontend Pipeline</h5>
+                    <p className="text-[11px] text-slate-400">Automatic CI/CD on every git push. Connect your main branch to Vercel for instant live updates.</p>
+                  </div>
+                  <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                    <h5 className="text-xs font-bold text-amber-500 uppercase mb-2">Backend Pipeline</h5>
+                    <p className="text-[11px] text-slate-400">Railway detect's the Maven pom.xml and handles the JDK environment setup automatically.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === TabType.AI_EXPLAINER && (
             <div className="space-y-6 animate-in fade-in duration-500">
               <div className="flex items-center gap-4 mb-4">
@@ -271,10 +394,8 @@ const App: React.FC = () => {
                     <MessageSquare size={16} className="text-indigo-400" />
                     <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Expert Insights</span>
                   </div>
-                  <div className="p-8 prose prose-invert max-w-none text-slate-300 leading-relaxed space-y-4">
-                    {aiExplanation.split('\n').map((line, i) => (
-                      <p key={i}>{line}</p>
-                    ))}
+                  <div className="p-8 prose prose-invert max-w-none text-slate-300 leading-relaxed space-y-4 whitespace-pre-wrap">
+                    {aiExplanation}
                   </div>
                 </div>
               )}
@@ -289,7 +410,7 @@ const App: React.FC = () => {
                   <p className="text-[10px] text-slate-500">Implement these patterns</p>
                 </button>
                 <button 
-                  onClick={() => setSelectedFile(AURUM_PROJECT_FILES[2])}
+                  onClick={() => setSelectedFile(AURUM_PROJECT_FILES[3])} // Select Auth Controller
                   className="p-4 bg-slate-900 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors text-left group"
                 >
                   <ShieldCheck className="text-slate-500 group-hover:text-amber-500 mb-2 transition-colors" size={20} />

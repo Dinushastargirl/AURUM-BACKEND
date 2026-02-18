@@ -3,12 +3,12 @@ import { CodeSnippet } from './types';
 
 export const AURUM_PROJECT_FILES: CodeSnippet[] = [
   {
-    id: 'entity',
+    id: 'booking-entity',
     name: 'Booking.java',
-    path: 'com.aurum.bookings.entity.Booking',
+    path: 'com.aurum.studio.entity.Booking',
     language: 'java',
-    description: 'The core domain model representing a client appointment.',
-    content: `package com.aurum.bookings.entity;
+    description: 'The core domain model for studio appointments.',
+    content: `package com.aurum.studio.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,53 +30,74 @@ public class Booking {
     private String clientName;
     
     @Column(nullable = false)
-    private String phoneNumber;
+    private String phone;
     
     @Column(nullable = false)
-    private String serviceType;
+    private LocalDateTime appointmentTime;
     
     @Column(nullable = false)
-    private LocalDateTime appointmentDate;
+    private String status = "PENDING";
     
-    @Enumerated(EnumType.STRING)
-    private BookingStatus status = BookingStatus.PENDING;
+    @Column
+    private String payherePaymentId;
+}`
+  },
+  {
+    id: 'user-entity',
+    name: 'User.java',
+    path: 'com.aurum.studio.entity.User',
+    language: 'java',
+    description: 'Simple user entity for basic authentication roles.',
+    content: `package com.aurum.studio.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "users")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
     
-    public enum BookingStatus {
-        PENDING, CONFIRMED, CANCELLED, COMPLETED
-    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(unique = true, nullable = false)
+    private String username;
+    
+    @Column(nullable = false)
+    private String password;
 }`
   },
   {
     id: 'repository',
     name: 'BookingRepository.java',
-    path: 'com.aurum.bookings.repository.BookingRepository',
+    path: 'com.aurum.studio.repository.BookingRepository',
     language: 'java',
-    description: 'Data access layer for database operations.',
-    content: `package com.aurum.bookings.repository;
+    description: 'Standard JPA repository for database interaction.',
+    content: `package com.aurum.studio.repository;
 
-import com.aurum.bookings.entity.Booking;
+import com.aurum.studio.entity.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @Repository
-export interface BookingRepository extends JpaRepository<Booking, Long> {
-    // Custom query to find bookings by date range if needed
-    List<Booking> findAllByAppointmentDateBetween(LocalDateTime start, LocalDateTime end);
+public interface BookingRepository extends JpaRepository<Booking, Long> {
+    // Standard CRUD inherited from JpaRepository
 }`
   },
   {
     id: 'service',
     name: 'BookingService.java',
-    path: 'com.aurum.bookings.service.BookingService',
+    path: 'com.aurum.studio.service.BookingService',
     language: 'java',
-    description: 'Business logic layer handling validation and processing.',
-    content: `package com.aurum.bookings.service;
+    description: 'Service layer implementing the "Monday" and "Business Hours" rules.',
+    content: `package com.aurum.studio.service;
 
-import com.aurum.bookings.entity.Booking;
-import com.aurum.bookings.repository.BookingRepository;
+import com.aurum.studio.entity.Booking;
+import com.aurum.studio.repository.BookingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.DayOfWeek;
@@ -89,8 +110,8 @@ public class BookingService {
     
     private final BookingRepository bookingRepository;
     
-    public Booking saveBooking(Booking booking) {
-        validateAppointmentTime(booking);
+    public Booking createBooking(Booking booking) {
+        validateTime(booking);
         return bookingRepository.save(booking);
     }
     
@@ -98,21 +119,21 @@ public class BookingService {
         return bookingRepository.findAll();
     }
     
-    private void validateAppointmentTime(Booking booking) {
-        var date = booking.getAppointmentDate();
-        var time = date.toLocalTime();
+    private void validateTime(Booking booking) {
+        var dt = booking.getAppointmentTime();
+        var time = dt.toLocalTime();
         
-        // Rule 1: No Mondays
-        if (date.getDayOfWeek() == DayOfWeek.MONDAY) {
-            throw new IllegalArgumentException("Bookings are not available on Mondays.");
+        // The "Monday" Rule
+        if (dt.getDayOfWeek() == DayOfWeek.MONDAY) {
+            throw new RuntimeException("Validation Error: Mondays are closed.");
         }
         
-        // Rule 2: Business Hours (08:30 - 19:30)
-        LocalTime openingTime = LocalTime.of(8, 30);
-        LocalTime closingTime = LocalTime.of(19, 30);
+        // The "Hours" Rule (08:30 - 19:30)
+        LocalTime opening = LocalTime.of(8, 30);
+        LocalTime closing = LocalTime.of(19, 30);
         
-        if (time.isBefore(openingTime) || time.isAfter(closingTime)) {
-            throw new IllegalArgumentException("Appointments must be between 08:30 and 19:30.");
+        if (time.isBefore(opening) || time.isAfter(closing)) {
+            throw new RuntimeException("Validation Error: Appointments must be 08:30 - 19:30.");
         }
     }
 }`
@@ -120,13 +141,13 @@ public class BookingService {
   {
     id: 'controller',
     name: 'BookingController.java',
-    path: 'com.aurum.bookings.controller.BookingController',
+    path: 'com.aurum.studio.controller.BookingController',
     language: 'java',
-    description: 'REST API entry points for client and admin operations.',
-    content: `package com.aurum.bookings.controller;
+    description: 'Main REST Controller for booking operations.',
+    content: `package com.aurum.studio.controller;
 
-import com.aurum.bookings.entity.Booking;
-import com.aurum.bookings.service.BookingService;
+import com.aurum.studio.entity.Booking;
+import com.aurum.studio.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -141,28 +162,61 @@ public class BookingController {
     private final BookingService bookingService;
     
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
+    public ResponseEntity<?> create(@RequestBody Booking booking) {
         try {
-            Booking saved = bookingService.saveBooking(booking);
-            return ResponseEntity.ok(saved);
-        } catch (IllegalArgumentException e) {
+            return ResponseEntity.ok(bookingService.createBooking(booking));
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
     
     @GetMapping
-    public ResponseEntity<List<Booking>> getAllBookings() {
-        return ResponseEntity.ok(bookingService.getAllBookings());
+    public List<Booking> getAll() {
+        return bookingService.getAllBookings();
+    }
+}`
+  },
+  {
+    id: 'auth-controller',
+    name: 'AuthController.java',
+    path: 'com.aurum.studio.controller.AuthController',
+    language: 'java',
+    description: 'Auth endpoint returning "SUCCESS" on valid credentials.',
+    content: `package com.aurum.studio.controller;
+
+import lombok.Data;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api")
+public class AuthController {
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
+        boolean validUser = "admin".equals(request.getUsername()) || "client".equals(request.getUsername());
+        boolean validPass = "1234".equals(request.getPassword());
+        
+        if (validUser && validPass) {
+            return ResponseEntity.ok("SUCCESS");
+        }
+        return ResponseEntity.status(401).body("FAILURE");
+    }
+
+    @Data
+    static class LoginRequest {
+        private String username;
+        private String password;
     }
 }`
   },
   {
     id: 'config',
     name: 'WebConfig.java',
-    path: 'com.aurum.bookings.config.WebConfig',
+    path: 'com.aurum.studio.config.WebConfig',
     language: 'java',
-    description: 'Security configuration for CORS and frontend integration.',
-    content: `package com.aurum.bookings.config;
+    description: 'CORS Configuration enabling requests from localhost:3000.',
+    content: `package com.aurum.studio.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

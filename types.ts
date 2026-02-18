@@ -17,5 +17,7 @@ export enum TabType {
   ARCHITECTURE = 'architecture',
   CODE = 'code',
   SIMULATOR = 'simulator',
+  AUTH = 'auth',
+  DEPLOYMENT = 'deployment',
   AI_EXPLAINER = 'ai_explainer'
 }
